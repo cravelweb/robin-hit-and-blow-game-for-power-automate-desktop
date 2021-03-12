@@ -1,0 +1,41 @@
+Variables.CreateNewList List=> AnswerList
+Text.Random UseUpperCaseLetters: False UseLowerCaseLetters: False UseDigits: True UseSymbols: False MinimumLength: 1 MaximumLength: 1 RandomText=> RandomText
+Variables.AddItemToList Item: RandomText List: AnswerList NewList=> AnswerList
+SET Position TO -1
+LOOP WHILE (Position) = (-1)
+    Text.Random UseUpperCaseLetters: False UseLowerCaseLetters: False UseDigits: True UseSymbols: False MinimumLength: 1 MaximumLength: 1 RandomText=> RandomText
+    Variables.AddItemToList Item: RandomText List: AnswerList NewList=> AnswerList
+    Variables.RemoveDuplicateItemsFromList List: AnswerList IgnoreCase: False NewList=> AnswerList
+    Text.Join List: AnswerList Result=> JoinedText
+    Text.RegexParseForFirstOccurrence Text: JoinedText TextToFind: $'''^[0-9]{4}$''' StartingPosition: 0 IgnoreCase: False OccurrencePosition=> Position Match=> Match
+END
+Variables.CreateNewList List=> UserInputList
+LOOP LoopIndex FROM 1 TO 10 STEP 1
+    LABEL start
+    Display.InputDialog Title: $'''Hot&Blow''' Message: $'''%UserInputList%Enter a 4-digit number.''' InputType: Display.InputType.SingleLine IsTopMost: False UserInput=> UserInput ButtonPressed=> ButtonPressed2
+    Text.RegexParseForFirstOccurrence Text: UserInput TextToFind: $'''^[0-9]{4}$''' StartingPosition: 0 IgnoreCase: False OccurrencePosition=> Position Match=> Match
+    IF Position < 0 THEN
+        Display.ShowMessage Title: $'''Error''' Message: $'''It is not a 4-digit number.''' Icon: Display.Icon.None Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> ButtonPressed3
+        GOTO start
+    END
+    SET Hit TO 0
+    SET Blow TO 0
+    SET Digit TO 0
+    LOOP FOREACH CurrentItem IN AnswerList
+        Text.ParseForFirstOccurrence Text: UserInput TextToFind: CurrentItem StartingPosition: 0 IgnoreCase: False OccurrencePosition=> Position
+        IF Position >= 0 THEN
+            IF Position = Digit THEN
+                Variables.IncreaseVariable Value: Hit IncrementValue: 1 IncreasedValue=> Hit
+            ELSE
+                Variables.IncreaseVariable Value: Blow IncrementValue: 1 IncreasedValue=> Blow
+            END
+        END
+        Variables.IncreaseVariable Value: Digit IncrementValue: 1 IncreasedValue=> Digit
+    END
+    Variables.AddItemToList Item: $'''%LoopIndex% : %UserInput% -> %Hit% Hit / %Blow% Blow''' List: UserInputList NewList=> UserInputList
+    IF Hit = 4 THEN
+        Display.ShowMessage Title: $'''%UserInput%：Congrats! You are correct.''' Message: UserInputList Icon: Display.Icon.None Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> ButtonPressed4
+        EXIT Code: 0
+    END
+END
+Display.ShowMessage Title: $'''Too bad! The correct answer is %JoinedText%.''' Message: UserInputList Icon: Display.Icon.None Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> ButtonPressed4
